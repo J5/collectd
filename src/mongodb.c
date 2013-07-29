@@ -326,7 +326,7 @@ static int handle_lock (bson_iterator *iter) /* {{{ */
      * milliseconds (ms). */
     value = value / 1000;
 
-    submit_derive ("total_time_in_ms", "lock_held", value);
+    submit_derive ("total_time_in_ms", "global_lock_held", value);
     return (0);
 } /* }}} int handle_lock */
 
