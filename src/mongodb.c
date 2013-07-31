@@ -35,16 +35,17 @@
 #endif
 #include <mongo.h>
 #include <bson.h>
-#include <libmongoc/src/env.h>
+#include <env.h>
 
 #define MC_MONGO_DEF_HOST "127.0.0.1"
 
-/* FIXME: use autoconf to determine if bson_iterator_subobject_init or
-          the older bson_iterator_subobject should be used.  Right now
-          you need to use the unreleased mongo c driver out of git.
-*/
-
+#if HAVE_BSON_ITERATOR_SUBOBJECT_INIT /* mongo-c-driver git HEAD */
 # define _bson_subobject_destroy(obj) bson_destroy(obj)
+#else /* mongo-c-driver 0.7.x */
+/* noop */
+# define _bson_subobject_destroy(obj)
+# define bson_iterator_subobject_init(iter,obj,copy) bson_iterator_subobject(iter,obj)
+#endif
 
 /* TODO: Flesh this all out a bit more for use with non-auto-discover
  *       setups
