@@ -56,7 +56,6 @@ struct mongo_db_s /* {{{ */
     char *password;
     mongo connection;
 };
-
 typedef struct mongo_db_s mongo_db_t; /* }}} */
 
 struct mongo_config_s /* {{{ */
@@ -84,7 +83,7 @@ typedef struct mongo_config_s mongo_config_t; /* }}} */
 
 mongo_config_t *mc = NULL;
 
-static const char *config_keys[] = {
+static const char *config_keys[] = { /* {{{ */
     "User",
     "Password",
     "Database",
@@ -92,7 +91,7 @@ static const char *config_keys[] = {
     "Port",
     "AllowSecondaryQuery"
 };
-static int config_keys_num = STATIC_ARRAY_SIZE (config_keys);
+static int config_keys_num = STATIC_ARRAY_SIZE (config_keys); /* }}} */
 
 static void mc_config_set (char **dest, const char *src ) /* {{{ */
 {
@@ -145,7 +144,7 @@ static int mc_connect (mongo *conn, const char *host, int port, const char *user
     if (status == MONGO_ERROR) {
         mongo_disconnect(conn);
     } else {
-        // we are still connected
+        /* we are still connected */
         if (is_master_out != NULL)
             mongo_cmd_ismaster (conn, is_master_out);
         return MONGO_OK;
@@ -178,12 +177,12 @@ static void submit (const char *type, const char *instance, /* {{{ */
     v.values = values;
     v.values_len = values_len;
 
-    sstrncpy (v.host, hostname_g, sizeof(v.host));
-    sstrncpy (v.plugin, "mongodb", sizeof(v.plugin));
+    sstrncpy (v.host, hostname_g, sizeof (v.host));
+    sstrncpy (v.plugin, "mongodb", sizeof (v.plugin));
     if (db != NULL) {
         ssnprintf (v.plugin_instance, sizeof (v.plugin_instance), "%s", db->name);
     }
-    sstrncpy (v.type, type, sizeof(v.type));
+    sstrncpy (v.type, type, sizeof (v.type));
 
     if (instance != NULL)
         sstrncpy (v.type_instance, instance, sizeof (v.type_instance));
@@ -206,7 +205,7 @@ static void submit_derive (const char *type, const char *instance, /* {{{ */
     value_t v;
 
     v.derive = derive;
-    submit(type, instance, &v, /* values_len = */ 1, NULL);
+    submit (type, instance, &v, /* values_len = */ 1, NULL);
 } /* }}} void submit_derive */
 
 static int handle_field (bson *obj, const char *field, /* {{{ */
@@ -381,7 +380,7 @@ static int handle_index_counters (bson_iterator *iter) /* {{{ */
 
     bson_iterator_subobject_init (iter, &subobj, 0);
     status = handle_btree (&subobj);
-    _bson_subobject_destroy(&subobj);
+    _bson_subobject_destroy (&subobj);
 
     return (status);
 } /* }}} int handle_index_counters */
@@ -408,7 +407,7 @@ static int query_server_status (void) /* {{{ */
     handle_field (&result, "globalLock",    handle_lock);
     handle_field (&result, "indexCounters", handle_index_counters);
 
-    bson_destroy(&result);
+    bson_destroy (&result);
     return (0);
 } /* }}} int query_server_status */
 
@@ -468,12 +467,12 @@ static int mc_db_stats_read_cb (user_data_t *ud) /* {{{ */
         port = mc->secondary_query_port;
     }
 
-    if (mc_connect(&(db->connection),
-                   host,
-                   port,
-                   (db->user != NULL) ? db->user : mc->user,
-                   (db->password != NULL) ? db->password : mc->password,
-                   NULL) != 0) {
+    if (mc_connect (&(db->connection),
+                    host,
+                    port,
+                    (db->user != NULL) ? db->user : mc->user,
+                    (db->password != NULL) ? db->password : mc->password,
+                    NULL) != 0) {
         return (-1);
     }
 
@@ -497,7 +496,7 @@ static int mc_db_stats_read_cb (user_data_t *ud) /* {{{ */
     return (0);
 } /* }}} int query_dbstats */
 
-static void mc_unregister_and_free_ghost_dbs(llist_t *ghost_dbs, _Bool free_list) {
+static void mc_unregister_and_free_ghost_dbs (llist_t *ghost_dbs, _Bool free_list) {
     llentry_t *e_this;
     llentry_t *e_next;
 
@@ -515,7 +514,7 @@ static void mc_unregister_and_free_ghost_dbs(llist_t *ghost_dbs, _Bool free_list
         free (ghost_dbs);
 }
 
-static void free_db_userdata(void *data) {
+static void free_db_userdata (void *data) {
     mongo_db_t *db = (mongo_db_t *) data;
     sfree (db->name);
     sfree (db->user);
@@ -524,7 +523,7 @@ static void free_db_userdata(void *data) {
     free (db);
 }
 
-static int setup_dbs(void) /* {{{ */
+static int setup_dbs (void) /* {{{ */
 {
     bson out;
     bson_iterator it, it_dbs;
@@ -532,7 +531,7 @@ static int setup_dbs(void) /* {{{ */
     llist_t *old_db_llist = mc->db_llist;
     mongo_db_t *db;
 
-    if (mongo_simple_int_command( &(mc->connection), "admin", "listDatabases", 1, &out ) != MONGO_OK)
+    if (mongo_simple_int_command (&(mc->connection), "admin", "listDatabases", 1, &out) != MONGO_OK)
         return MONGO_ERROR;
 
     bson_find (&it, &out, "databases");
@@ -545,7 +544,7 @@ static int setup_dbs(void) /* {{{ */
         bson_iterator sub_it;
 
         bson_iterator_subobject_init (&it_dbs, &sub, 0);
-        if (bson_find(&sub_it, &sub, "name")) {
+        if (bson_find (&sub_it, &sub, "name")) {
             db_name = bson_iterator_string (&sub_it);
         } else {
             // shouldn't happen
@@ -611,7 +610,7 @@ oom:
 static void mc_split_host_port (const char *full_host, char **host_in, int *port_in) /* {{{ */
 {
     char *delimit_c;
-    delimit_c = strrchr(full_host, ':');
+    delimit_c = strrchr (full_host, ':');
     if (delimit_c == NULL) {
         /* this is ulikely but use a default port if no port is given */
         *port_in = 27017;
@@ -656,22 +655,22 @@ static void mc_config_secondary (bson *is_master) /* {{{ */
     }
 } /* }}} void mc_config_secondary */
 
-static int mc_setup_read(void) /* {{{ */
+static int mc_setup_read (void) /* {{{ */
 {
     bson is_master_out;
     bson_iterator it;
     int max_bson_size = MONGO_DEFAULT_MAX_BSON_SIZE;
 
-    if (mc_connect(&(mc->connection), mc->host, mc->port, mc->user, mc->password, &is_master_out) != 0) {
+    if (mc_connect (&(mc->connection), mc->host, mc->port, mc->user, mc->password, &is_master_out) != 0) {
         return (-1);
     }
 
-    if( bson_find( &it, &is_master_out, "ismaster" ) )
-        mc->is_primary = bson_iterator_bool( &it );
-    if( bson_find( &it, &is_master_out, "maxBsonObjectSize" ) )
-        max_bson_size = bson_iterator_int( &it );
-    if( bson_find( &it, &is_master_out, "setName" ) )
-        mc_config_set(&(mc->set_name), bson_iterator_string( &it ));
+    if (bson_find (&it, &is_master_out, "ismaster"))
+        mc->is_primary = bson_iterator_bool (&it);
+    if (bson_find( &it, &is_master_out, "maxBsonObjectSize"))
+        max_bson_size = bson_iterator_int (&it);
+    if (bson_find( &it, &is_master_out, "setName"))
+        mc_config_set (&(mc->set_name), bson_iterator_string (&it));
     mc->connection.max_bson_size = max_bson_size;
 
     if (mc->allow_secondary_query) {
@@ -699,7 +698,8 @@ static int mc_setup_read(void) /* {{{ */
     return (0);
 } /* }}} int mc_setup_read */
 
-static int mc_init_config_struct (void) {
+static int mc_init_config_struct (void) /* {{{ */
+{
     if (mc == NULL) {
         mc = (mongo_config_t *) malloc (sizeof(mongo_config_t));
         if (mc == NULL) {
@@ -709,26 +709,26 @@ static int mc_init_config_struct (void) {
         memset (mc, 0, sizeof (mongo_config_t));
         /* autodiscover on by default */
         mc->auto_discover = 1;
-        mc->db_llist = llist_create();
+        mc->db_llist = llist_create ();
         if (mc->db_llist == NULL) {
             ERROR ("OOM trying to allocate the db list");
             return (-1);
         }
 
-        mongo_init(&(mc->connection));
+        mongo_init (&(mc->connection));
     }
     return 0;
-}
+} /* }}} mc_init_config_struct */
 
 static int mc_config (const char *key, const char *value) /* {{{ */
 {
 
-    if (mc_init_config_struct() != 0)
+    if (mc_init_config_struct () != 0)
         return -1;
 
-    if (strcasecmp("Host", key) == 0)
-        mc_config_set(&(mc->host),value);
-    else if (strcasecmp("Port", key) == 0)
+    if (strcasecmp ("Host", key) == 0)
+        mc_config_set (&(mc->host), value);
+    else if (strcasecmp ("Port", key) == 0)
     {
         int tmp;
 
@@ -741,12 +741,12 @@ static int mc_config (const char *key, const char *value) /* {{{ */
             return (-1);
         }
     }
-    else if (strcasecmp("User", key) == 0)
-        mc_config_set(&mc->user, value);
-    else if (strcasecmp("Password", key) == 0)
-        mc_config_set(&mc->password, value);
-    else if (strcasecmp("AllowSecondaryQuery", key) == 0)
-        if (strcasecmp("true", value) == 0 || strcasecmp("1", value) == 0)
+    else if (strcasecmp ("User", key) == 0)
+        mc_config_set (&mc->user, value);
+    else if (strcasecmp ("Password", key) == 0)
+        mc_config_set (&mc->password, value);
+    else if (strcasecmp ("AllowSecondaryQuery", key) == 0)
+        if (strcasecmp ("true", value) == 0 || strcasecmp ("1", value) == 0)
             mc->allow_secondary_query = 1;
         else
             mc->allow_secondary_query = 0;
@@ -759,7 +759,7 @@ static int mc_config (const char *key, const char *value) /* {{{ */
     return (0);
 } /* }}} int mc_config */
 
-static int mc_shutdown(void) /* {{{ */
+static int mc_shutdown (void) /* {{{ */
 {
     mongo_destroy (&(mc->connection));
 
@@ -768,17 +768,17 @@ static int mc_shutdown(void) /* {{{ */
     sfree (mc->host);
     sfree (mc->secondary_query_host);
 
-    llist_destroy(mc->db_llist);
+    llist_destroy (mc->db_llist);
 
 
     free (mc);
     return (0);
 } /* }}} int mc_shutdown */
 
-void module_register(void)
+void module_register (void)
 {
     plugin_register_config ("mongodb", mc_config,
-            config_keys, config_keys_num);
+                            config_keys, config_keys_num);
 
     /* the setup read checks if we are a master node and sets up database reads accordingly */
     plugin_register_read ("mongodb", mc_setup_read);
