@@ -2163,10 +2163,10 @@ AC_ARG_WITH(libmongoc, [AS_HELP_STRING([--with-libmongoc@<:@=PREFIX@:>@], [Path 
 
 SAVE_CPPFLAGS="$CPPFLAGS"
 SAVE_LDFLAGS="$LDFLAGS"
+SAVE_LIBS="$LIBS"
 
 CPPFLAGS="$CPPFLAGS $LIBMONGOC_CPPFLAGS"
 LDFLAGS="$LDFLAGS $LIBMONGOC_LDFLAGS"
-
 if test "x$with_libmongoc" = "xyes"
 then
 	if test "x$LIBMONGOC_CPPFLAGS" != "x"
@@ -2192,8 +2192,11 @@ then
 	AC_CHECK_LIB(mongoc, mongo_run_command,
 	[with_libmongoc="yes"],
 	[with_libmongoc="no (symbol 'mongo_run_command' not found)"])
+	LIBS="$LIBS -lmongoc"
+	AC_CHECK_FUNCS(bson_iterator_subobject_init)
 fi
 
+LIBS="$SAVE_LIBS"
 CPPFLAGS="$SAVE_CPPFLAGS"
 LDFLAGS="$SAVE_LDFLAGS"
 
